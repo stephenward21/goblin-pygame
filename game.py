@@ -25,16 +25,17 @@ keys = {
 }
 
 hero = {
-	"x": 100,
-	"y": 100,
+	"x": 150,
+	"y": 300,
 	"speed": 10,
 	"wins": 0
 }
 
 goblin = {
-	"x": 150,
-	"y": 150,
-	"speed": 7
+	"x": 300,
+	"y": 300,
+	"speed": 3,
+	"direction": "N"
 }
 
 monster = {
@@ -43,12 +44,6 @@ monster = {
 	"speed": 10
 }
 
-chicken_power = {
-	"x": 125,
-	"y": 125,
-	"speed": 2,
-	"power": 0
-}
 
 keys_down = {
 	"right": False,
@@ -57,6 +52,14 @@ keys_down = {
 	"down": False
 }
 
+powerup = {
+	'active': True,
+	'tick_gotten': 0
+}
+
+game_paused = False
+
+directions = ["N", "S", "E", "W", "NE", "NW", "SE", "SW"]
 
 screen_size = (screen["height"], screen["width"])
 pygame_screen = pygame.display.set_mode(screen_size)
@@ -64,7 +67,7 @@ pygame.display.set_caption("Goblin Chase")
 background_image = pygame.image.load('images/duckhunter.png')
 hero_image = pygame.image.load('images/hero.png')
 goblin_image = pygame.image.load('images/goblin.png')
-monster_image = pygame.image.load('images/sloth.jpg')
+monster_image = pygame.image.load('images/monster.png')
 chicken_image = pygame.image.load('images/chicken-leg.jpg')
 
 # Add music files
@@ -73,17 +76,26 @@ pygame.mixer.music.play(-1)
 win_sound = pygame.mixer.Sound('./sounds/win.wav')
 lose_sound = pygame.mixer.Sound('./sounds/lose.wav')
 
+tick = 0
+timer = 0
+
 # //////  CREATE GAME LOOP //////
 game_on = True
 while game_on: 
+	# update our ticker each time through the loop ~30/sec
+	tick += 1
+# def game_time(keys):
 	for event in pygame.event.get():
 	# add a quit event
 		if event.type == pygame.QUIT:
 			game_on = False
 
 		elif event.type == pygame.KEYDOWN:
-			if event.key == keys["up"]:
-				keys_down['up'] = True
+		# 	if event.key == keys['up' or 'down' or 'left' or 'right']:
+		# 		return keys_down == True
+
+			if event.key == keys['up']:
+				keys_down['up'] == True
 				
 			elif event.key == keys["down"]:
 				keys_down['down'] = True
@@ -96,39 +108,65 @@ while game_on:
 				
 		elif event.type == pygame.KEYUP:
 			print ("The user let go of a key")
-			if event.key == keys["up"]:
+			if event.key == keys['up']:	
 				keys_down['up'] = False
-				goblin['y'] -= goblin ['speed']
+				
 			if event.key == keys["down"]:
 				keys_down['down'] = False
-				goblin['y'] += goblin ['speed']
+				
 			if event.key == keys["left"]:
 				keys_down['left'] = False
-				goblin['x'] -= goblin ['speed']
+				
 			if event.key == keys["right"]:
 				keys_down['right'] = False
-				goblin['x'] += goblin['speed']
-
-
+				
+		
+	if (not game_paused):
 	# Update Hero position
-	if keys_down['up']:
-		hero['y'] -= hero ['speed']
-	elif keys_down['down']:
-		hero['y'] += hero ['speed']
-	if keys_down ['left']:
-		hero['x'] -= hero ['speed']
-	elif keys_down['right']:
-		hero['x'] += hero['speed']
+		if keys_down['up']:
+			hero['y'] -= hero['speed']
+		elif keys_down['down']:
+			hero['y'] += hero['speed']
+		if keys_down ['left']:
+			hero['x'] -= hero['speed']
+		elif keys_down['right']:
+			hero['x'] += hero['speed']
 
 
-	# if keys_down['up']:
-	# 	goblin['y'] -= goblin ['speed']
-	# elif keys_down['down']:
-	# 	goblin['y'] += goblin ['speed']
-	# if keys_down ['left']:
-	# 	goblin['x'] -= goblin ['speed']
-	# elif keys_down['right']:
-	# 	goblin['x'] += goblin['speed']
+		if (goblin['direction'] == "N"):
+			goblin['y'] -= goblin['speed']
+		elif (goblin['direction'] == "S"):
+			goblin['y'] += goblin['speed']
+		elif (goblin['direction'] == "E"):
+			goblin['x'] += goblin['speed']
+		elif (goblin['direction'] == "W"):
+			goblin['x'] -= goblin['speed']
+		elif (goblin['direction'] == "NE"):
+			goblin['y'] -= goblin['speed']
+			goblin['x'] += goblin['speed']
+		elif (goblin['direction'] == "NW"):
+			goblin['y'] -= goblin['speed']
+			goblin['x'] -= goblin['speed']
+		elif (goblin['direction'] == "SE"):
+			goblin['y'] += goblin['speed']
+			goblin['x'] += goblin['speed']
+		elif (goblin['direction'] == "SW"):
+			goblin['y'] += goblin['speed']
+			goblin['x'] -= goblin['speed']
+
+
+	if (tick % 20 == 0):
+		new_dir_index = randint(0, len(directions) - 1)
+		goblin['direction'] = directions[new_dir_index]
+
+	if (goblin ['x'] > screen['width']):
+		goblin['x'] = 0
+	elif (goblin ['x'] < 0):
+		goblin['x'] = 0
+	elif (goblin ['y'] > screen['height']):
+		goblin ['y'] = 0
+	elif goblin ['y'] < 0:
+		goblin ['y'] = 0
 
 	# COLLISSION DETECTION!!
 	distance_between = fabs(hero['x'] - goblin['x']) + (hero['y'] - goblin['y'])
@@ -143,14 +181,14 @@ while game_on:
 		goblin['x'] = rand_x
 		goblin['y'] = rand_y
 		
-
-		hero['wins'] += 1
-
-		win_sound.play()
+		if (not game_paused):
+			hero['wins'] += 1
+			# goblin['speed'] += 5
+			win_sound.play()
 
 	distance_between = fabs(hero['x'] - monster['x']) + (hero['y'] - monster['y'])
 
-	if (distance_between < 56):
+	if (distance_between < 32):
 		print ("The monster killed the Hero!")
 		rand_x = randint(0, screen['width'])
 		rand_y = randint(0, screen['height'])
@@ -158,16 +196,12 @@ while game_on:
 		monster['y'] = rand_y
 
 
-	distance_between = fabs(hero['x'] - chicken_power['x']) + (hero['y'] - chicken_power['y'])
+	distance_between = fabs(hero['x'] - 100) + (hero['y'] - 200)
 
-	if (distance_between < 30):
+	if (distance_between < 32):
 		print ("Power Up!")
-		rand_x = randint(0, screen['width'])
-		rand_y = randint(0, screen['height'])
-		chicken_power['x'] = rand_x
-		chicken_power['y'] = rand_y
-
-		chicken_power['power'] += 1
+		powerup['tick_gotten'] += 1
+		
 
 
 
@@ -185,18 +219,29 @@ while game_on:
 	# Draw the hero wins on the screen
 	font = pygame.font.Font(None, 25)
 	wins_text = font.render("Wins %d" % (hero['wins']), True, (0, 0, 0))
-	pygame_screen.blit(wins_text, [40,40])
+	pygame_screen.blit(wins_text, [15,15])
 
 	# Draw the hero powers up on screen when he gets the Turkey
 	font = pygame.font.Font(None, 25)
-	powers_text = font.render("Power - Ups %d" % (chicken_power['power']), True, (0, 0, 0))
-	pygame_screen.blit(powers_text, [60,60])
+	powers_text = font.render("Power - Ups %d" % (powerup['tick_gotten']), True, (0, 0, 0))
+	pygame_screen.blit(powers_text, [315, 25])
+
+
+	if (tick % 30 == 0):
+		timer += 1
+	timer_text = font.render("Seconds Alive: %d" % (timer), True, (0,0,0))
+	pygame_screen.blit(timer_text, [15,35])
+
+	if(game_paused):
+		timer_text = font.render("Game Paused. Hit space to unpause", True, (0,0,0))
+		pygame_screen.blit(timer_text, [200,300])
+
 
 	#draw hero
 	draw_hero = pygame_screen.blit(hero_image, [hero['x'], hero['y']])
 	draw_goblin = pygame_screen.blit(goblin_image, [goblin['x'], goblin['y']])
 	draw_monster = pygame_screen.blit(monster_image, [monster['x'], monster['y']])
-	draw_chicken = pygame_screen.blit(chicken_image, [chicken_power['x'], chicken_power['y']])
+	draw_chicken = pygame_screen.blit(chicken_image, [100, 200])
 
 	pygame.display.flip()
 	# Flip the screen and start over
